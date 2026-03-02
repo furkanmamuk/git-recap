@@ -2,8 +2,9 @@
 import { program } from 'commander';
 import { generateRecap } from './recap.js';
 import { printBanner, printRecap, printError } from './display.js';
-import { readConfig, isProUnlocked } from './config.js';
-import { upgrade } from './upgrade.js';
+import { readConfig, isProUnlocked, getConfigPath } from './config.js';
+const CONFIG_FILE = getConfigPath();
+import { upgrade, activate } from './upgrade.js';
 
 const pkg = JSON.parse(
   await import('fs').then(fs => fs.promises.readFile(
@@ -85,6 +86,13 @@ program
   });
 
 program
+  .command('activate <key>')
+  .description('Activate your Pro license key')
+  .action(async (key) => {
+    await activate(key);
+  });
+
+program
   .command('config')
   .description('Show configuration')
   .action(() => {
@@ -92,7 +100,7 @@ program
     const isPro = isProUnlocked(config);
     console.log('\n📋 git-recap configuration:\n');
     console.log(`  Status: ${isPro ? '✅ Pro' : '🆓 Free'}`);
-    console.log(`  Config file: ${getConfigPath()}`);
+    console.log(`  Config file: ${CONFIG_FILE}`);
     if (config.author) console.log(`  Default author: ${config.author}`);
     console.log('');
   });

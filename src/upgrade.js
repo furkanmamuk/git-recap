@@ -1,6 +1,8 @@
-import { readConfig, saveLicense, isProUnlocked } from './config.js';
+import { readConfig, saveLicense, isProUnlocked, validateKeyOnline } from './config.js';
 
-const UPGRADE_URL = 'https://git-recap.lemonsqueezy.com/buy/pro';
+// After creating your Polar.sh product, update this URL
+// Setup: polar.sh → sign in with GitHub → Create product "git-recap Pro" at $9
+const UPGRADE_URL = process.env.UPGRADE_URL || 'https://polar.sh/furkanmamuk/products/git-recap-pro';
 const CYAN = '\x1b[36m';
 const GREEN = '\x1b[32m';
 const YELLOW = '\x1b[33m';
@@ -48,17 +50,25 @@ export async function activate(key) {
     return;
   }
 
-  // Validate locally (offline-first)
+  // Validate locally first (offline), then online if needed
   const testConfig = { licenseKey: key };
-  if (isProUnlocked(testConfig)) {
+  let valid = isProUnlocked(testConfig);
+
+  if (!valid) {
+    // Try online validation for Polar.sh keys
+    console.log(`${DIM}Validating license...${RESET}`);
+    valid = await validateKeyOnline(key);
+  }
+
+  if (valid) {
     saveLicense(key);
     console.log(`\n${GREEN}${BOLD}✅ License activated! Welcome to git-recap Pro!${RESET}`);
     console.log(`\nTry it out:`);
     console.log(`  ${CYAN}git-recap today --format html${RESET}  — Generate an HTML report`);
     console.log(`  ${CYAN}git-recap week --all-repos${RESET}      — Scan all repos\n`);
   } else {
-    console.log(`\n${RED}✗ Invalid license key format.${RESET}`);
-    console.log(`Expected format: GR-XXXXXXXX-XXXXXXXX`);
-    console.log(`Purchase at: ${CYAN}${UPGRADE_URL}${RESET}\n`);
+    console.log(`\n${RED}✗ Invalid or expired license key.${RESET}`);
+    console.log(`Purchase at: ${CYAN}${UPGRADE_URL}${RESET}`);
+    console.log(`Or contact support if you already purchased: mamukfurkan@outlook.com\n`);
   }
 }
