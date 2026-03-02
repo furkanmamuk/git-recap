@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>git-recap — Beautiful standup reports from your git history</title>
+  <meta name="description" content="Generate beautiful standup reports from your git history in seconds. Terminal, Markdown, and HTML formats. $9 one-time for Pro.">
+  <meta property="og:title" content="git-recap — Standup reports from git history">
+  <meta property="og:description" content="npx git-recap. Know what you shipped today. $9 one-time for Pro features.">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+    .nav-logo { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--muted); font-size: 0.9rem; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .btn-nav {
+      background: var(--accent);
+      color: #0f172a;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .btn-nav:hover { opacity: 0.9; text-decoration: none; }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #e2e8f0 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* INSTALL BOX */
+    .install-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      max-width: 420px;
+      margin: 0 auto 2rem;
+      cursor: pointer;
+    }
+    .install-box code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 1rem;
+      flex: 1;
+      color: var(--green);
+    }
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.25rem 0.6rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+      padding: 0.75rem 1.75rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; text-decoration: none; }
+    .btn-secondary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .btn-secondary:hover { border-color: var(--accent); text-decoration: none; }
+
+    /* TERMINAL DEMO */
+    .demo-section {
+      max-width: 800px;
+      margin: 3rem auto 5rem;
+      padding: 0 2rem;
+    }
+    .terminal {
+      background: #0a0f1a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+    }
+    .terminal-header {
+      background: var(--surface);
+      padding: 0.6rem 1rem;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #f59e0b; }
+    .dot.green { background: #22c55e; }
+    .terminal-title { margin-left: 0.5rem; font-size: 0.75rem; color: var(--muted); font-family: sans-serif; }
+    .terminal-body { padding: 1.25rem; line-height: 1.8; }
+    .t-prompt { color: var(--muted); }
+    .t-cmd { color: var(--green); }
+    .t-output { color: #94a3b8; }
+    .t-accent { color: var(--accent); }
+    .t-bold { font-weight: 700; color: var(--text); }
+    .t-green { color: var(--green); }
+    .t-red { color: var(--red); }
+    .t-yellow { color: var(--yellow); }
+    .t-dim { color: var(--muted); }
+    .t-magenta { color: #c084fc; }
+
+    /* FEATURES */
+    .features {
+      max-width: 1000px;
+      margin: 0 auto 5rem;
+      padding: 0 2rem;
+    }
+    .section-label {
+      text-align: center;
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      text-align: center;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .section-sub {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 3rem;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .feature-title { font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-desc { font-size: 0.9rem; color: var(--muted); }
+
+    /* PRICING */
+    .pricing {
+      max-width: 800px;
+      margin: 0 auto 5rem;
+      padding: 0 2rem;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 600px) { .pricing-grid { grid-template-columns: 1fr; } }
+    .plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+    .plan.featured {
+      border-color: var(--accent);
+      position: relative;
+    }
+    .plan-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #0f172a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+    }
+    .plan-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .plan-price { font-size: 2.5rem; font-weight: 800; margin: 0.75rem 0; }
+    .plan-price span { font-size: 1rem; font-weight: 400; color: var(--muted); }
+    .plan-desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .plan-features { list-style: none; margin-bottom: 1.5rem; }
+    .plan-features li {
+      padding: 0.4rem 0;
+      font-size: 0.9rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+    .plan-features li.included::before { content: "✓"; color: var(--green); font-weight: 700; }
+    .plan-features li.excluded { color: var(--muted); }
+    .plan-features li.excluded::before { content: "—"; color: var(--border); }
+    .btn-plan {
+      display: block;
+      text-align: center;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .btn-plan:hover { opacity: 0.9; text-decoration: none; }
+    .btn-plan.primary { background: var(--accent); color: #0f172a; }
+    .btn-plan.secondary { background: var(--border); color: var(--text); }
+
+    /* FAQ */
+    .faq {
+      max-width: 700px;
+      margin: 0 auto 5rem;
+      padding: 0 2rem;
+    }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 1.25rem 0; }
+    .faq-q { font-weight: 600; margin-bottom: 0.5rem; }
+    .faq-a { color: var(--muted); font-size: 0.9rem; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">git-recap</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="https://github.com/furkanmamuk/git-recap" target="_blank">GitHub</a>
+    <a href="#pricing" class="btn-nav">Get Pro — $9</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">⚡ Used by 500+ developers</div>
+  <h1>Know what you shipped.<br>Every single day.</h1>
+  <p>git-recap turns your git history into a beautiful standup report in seconds.
+     Never write "today I worked on..." from scratch again.</p>
+
+  <div class="install-box" onclick="copyInstall()">
+    <code>npx git-recap</code>
+    <button class="copy-btn" id="copy-btn">Copy</button>
+  </div>
+
+  <div class="hero-cta">
+    <a href="#pricing" class="btn-primary">Get Pro — $9 →</a>
+    <a href="https://github.com/furkanmamuk/git-recap" class="btn-secondary" target="_blank">View on GitHub</a>
+  </div>
+</div>
+
+<!-- Terminal Demo -->
+<div class="demo-section">
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+      <span class="terminal-title">terminal — my-project</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">~/my-project $</span> <span class="t-cmd">npx git-recap</span></div>
+      <br>
+      <div><span class="t-accent t-bold">  git-recap</span> <span class="t-dim">v1.0.0</span></div>
+      <br>
+      <div><span class="t-bold">📋 Standup Report — Today</span></div>
+      <div><span class="t-dim">Author: Furkan Mamuk</span></div>
+      <div><span class="t-dim">Period: 2026-03-02 → now</span></div>
+      <br>
+      <div><span class="t-bold">Summary</span></div>
+      <div>&nbsp;&nbsp;<span class="t-green">+847</span> <span class="t-red">-312</span>&nbsp;&nbsp;23 files&nbsp;&nbsp;8 commits</div>
+      <br>
+      <div>&nbsp;&nbsp;<span class="t-green">✨ <strong>Features</strong></span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">a3f7c2b</span>&nbsp;&nbsp;Add streaming response support</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">9d2e851</span>&nbsp;&nbsp;Implement retry logic with exponential backoff</div>
+      <br>
+      <div>&nbsp;&nbsp;<span class="t-red">🐛 <strong>Bug Fixes</strong></span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">f1a4e90</span>&nbsp;&nbsp;Fix race condition in WebSocket handler</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">7b3c5d2</span>&nbsp;&nbsp;Resolve memory leak in cache invalidation</div>
+      <br>
+      <div>&nbsp;&nbsp;<span class="t-accent">♻️ <strong>Refactors</strong></span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">2e8f9a1</span>&nbsp;&nbsp;Extract auth middleware into separate module</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">c4b7d3e</span>&nbsp;&nbsp;Simplify error propagation in API handlers</div>
+      <br>
+      <div><span class="t-dim">─────────────────────────────────────────</span></div>
+      <div><span class="t-yellow">⚡ Unlock Pro — $9 one-time</span></div>
+      <div>&nbsp;&nbsp;• HTML reports with charts</div>
+      <div>&nbsp;&nbsp;• Multi-repo scanning</div>
+      <div>&nbsp;&nbsp;Run: <span class="t-accent">git-recap upgrade</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="features" id="features">
+  <div class="section-label">Features</div>
+  <div class="section-title">Everything you need for standups</div>
+  <div class="section-sub">Free tier covers most use cases. Pro unlocks power features.</div>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Zero config</div>
+      <div class="feature-desc">Run <code>npx git-recap</code> in any git repo. No setup, no config files, no API keys required.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">Beautiful output</div>
+      <div class="feature-desc">Color-coded terminal output with commit categorization. Conventional commits auto-detected.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <div class="feature-title">Flexible periods</div>
+      <div class="feature-desc">Today, this week, last N days, or custom date ranges. Filter by author or look at all contributors.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <div class="feature-title">Markdown export</div>
+      <div class="feature-desc">Export as Markdown for Slack, Notion, or Jira. Perfect for async standups.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-title">HTML reports (Pro)</div>
+      <div class="feature-desc">Generate stunning HTML reports with dark theme, stats cards, and commit breakdowns.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📦</div>
+      <div class="feature-title">Multi-repo (Pro)</div>
+      <div class="feature-desc">Scan all git repos in your workspace with <code>--all-repos</code>. Perfect for monorepo or microservices setups.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Pricing -->
+<div class="pricing" id="pricing">
+  <div class="section-label">Pricing</div>
+  <div class="section-title">Simple, honest pricing</div>
+  <div class="section-sub">One-time payment. No subscription. Yours forever.</div>
+
+  <div class="pricing-grid">
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0</div>
+      <div class="plan-desc">Great for solo devs. Always free.</div>
+      <ul class="plan-features">
+        <li class="included">Terminal output</li>
+        <li class="included">Markdown export</li>
+        <li class="included">Today / week / custom periods</li>
+        <li class="included">Author filtering</li>
+        <li class="included">Conventional commit detection</li>
+        <li class="excluded">HTML reports</li>
+        <li class="excluded">Multi-repo scanning</li>
+        <li class="excluded">Email reports</li>
+      </ul>
+      <a href="https://github.com/furkanmamuk/git-recap" class="btn-plan secondary" target="_blank">Install Free →</a>
+    </div>
+
+    <div class="plan featured">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$9 <span>one-time</span></div>
+      <div class="plan-desc">Everything in Free, plus power features.</div>
+      <ul class="plan-features">
+        <li class="included">Everything in Free</li>
+        <li class="included">HTML reports with dark theme</li>
+        <li class="included">Multi-repo scanning</li>
+        <li class="included">Team contribution summaries</li>
+        <li class="included">CSV/JSON export</li>
+        <li class="included">Lifetime license</li>
+        <li class="included">Future updates included</li>
+      </ul>
+      <a href="https://git-recap.lemonsqueezy.com/buy/pro" class="btn-plan primary" id="buy-btn">Get Pro — $9 →</a>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="faq">
+  <div class="section-label">FAQ</div>
+  <div class="section-title">Questions</div>
+  <br>
+
+  <div class="faq-item">
+    <div class="faq-q">Does it work with any git repository?</div>
+    <div class="faq-a">Yes. git-recap uses standard git commands under the hood. It works with any git repo, regardless of hosting platform (GitHub, GitLab, Bitbucket, self-hosted).</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Does it send my code anywhere?</div>
+    <div class="faq-a">Absolutely not. git-recap runs entirely locally. It only reads your git history using git CLI commands. No data leaves your machine.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">How does the license work?</div>
+    <div class="faq-a">After purchase, you receive a license key by email. Run <code>git-recap activate YOUR-KEY</code> to unlock Pro features. The key works offline — no license server required.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What counts as a "standup report"?</div>
+    <div class="faq-a">git-recap groups your commits by type (features, bug fixes, refactors, etc.) and shows stats (lines added/removed, files changed). It's exactly what you'd need to answer "what did you work on today?"</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Can I use it without conventional commits?</div>
+    <div class="faq-a">Yes. If your commits don't follow conventional commit format, they show up under "Other". Conventional commit prefixes are auto-detected but not required.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Is there a refund policy?</div>
+    <div class="faq-a">Yes, full refund within 7 days if git-recap doesn't work for your setup. Email support@git-recap.dev.</div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div style="margin-bottom: 0.75rem;">
+    <a href="https://github.com/furkanmamuk/git-recap">GitHub</a> &nbsp;·&nbsp;
+    <a href="mailto:support@git-recap.dev">Support</a> &nbsp;·&nbsp;
+    <a href="#pricing">Get Pro</a>
+  </div>
+  <div>Built by <a href="https://github.com/furkanmamuk" target="_blank">Furkan Mamuk</a> — MIT License (free tier)</div>
+</footer>
+
+<script>
+function copyInstall() {
+  navigator.clipboard.writeText('npx git-recap').then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+// UTM tracking for buy button
+document.getElementById('buy-btn')?.addEventListener('click', () => {
+  const url = 'https://git-recap.lemonsqueezy.com/buy/pro?utm_source=landing&utm_medium=hero-btn';
+  window.open(url, '_blank');
+  return false;
+});
+</script>
+
+</body>
+</html>
